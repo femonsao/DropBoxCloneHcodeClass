@@ -5,6 +5,9 @@ class DropBoxController {
         this.btnSendFilesEl = document.querySelector('#btn-send-file');
         this.inputFilesEl = document.querySelector('#files');
         this.modalFileEL = document.querySelector('#react-snackbar-root');
+        this.progressBarEl = this.modalFileEL.querySelector('.mc-progress-bar-fg');
+        this.fileNameEl = this.modalFileEL.querySelector('.filename');
+        this.timeLeftEl = this.modalFileEL.querySelector('.timeleft');
 
 
         this.initEvents();
@@ -28,8 +31,9 @@ class DropBoxController {
             console.log('calling uploadFiles function');
             this.uploadTask(event.target.files);
 
-            this.modalFileEL.style.display = 'block'
+            this.modalShow();
 
+            this.inputFilesEl.value = '';
 
         });
 
@@ -54,6 +58,8 @@ class DropBoxController {
                 ajax.open('POST', '/upload');
 
                 ajax.onload = event => {
+
+                    this.modalShow(false);
                     try {
                         resolve(JSON.parse(ajax.responseText));
 
@@ -65,8 +71,16 @@ class DropBoxController {
 
                 ajax.onerror = event => {
 
+                    this.modalShow(false);
+
                     reject(event);
 
+
+                }
+
+                ajax.upload.onprogress = event => {
+
+                    this.uploadProgress(event, file);
 
                 }
 
@@ -76,7 +90,9 @@ class DropBoxController {
 
                 formData.append('input-file', file);
 
-                console.log(formData, 'form ')
+                console.log(formData, 'form ');
+
+                this.startUploadTime = Date.now();
 
                 ajax.send(formData);
 
@@ -91,4 +107,52 @@ class DropBoxController {
 
     }
 
+    uploadProgress(event, file) {
+
+
+        let timeSpend = Date.now() - this.startUploadTime;
+        let loaded = event.loaded;
+        let total = event.total;
+        let porcent = parseInt((loaded / total) * 100);
+        let timeLeft = ((100 - porcent) * timeSpend) / porcent;
+
+
+        this.progressBarEl.style.width = `${porcent}%`;
+        this.fileNameEl.innerHTML = file.name;
+        this.timeLeftEl.innerHTML = this.formatTimeToHuman(timeLeft);
+
+
+
+    };
+
+
+    formatTimeToHuman(duration) {
+        let seconds = parseInt((duration / 1000) % 60);
+        let minutes = parseInt((duration / (1000 / 60) % 60));
+        let hours = parseInt((duration / (1000 / 60 * 60)) % 24);
+
+        if (hours > 0) {
+            return `${hours}:${minutes}:${seconds}`
+        }
+
+        if (minutes > 0) {
+            return `${hours}:${minutes}:${seconds}`
+        }
+
+        if (seconds > 0) {
+            return `${seconds}seg.`
+        }
+        return ''
+
+
+
+
+    }
+
+    modalShow(show = true) {
+
+
+        this.modalFileEL.style.display = (show) ? 'block' : 'none';
+
+    };
 }
