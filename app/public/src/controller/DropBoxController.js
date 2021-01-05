@@ -46,6 +46,7 @@ class DropBoxController {
         .then((responses) => {
           responses.forEach((resp) => {
             // console.log(resp.files["input-file"], "resp");
+            
 
             this.getFirebaseRef().push().set(resp.files["input-file"]);
           });
