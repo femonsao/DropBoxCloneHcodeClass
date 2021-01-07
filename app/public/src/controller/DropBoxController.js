@@ -43,29 +43,52 @@ class DropBoxController {
   getSelection() {
     return this.listFilesEl.querySelectorAll(".selected");
   }
+  removeTask() {
+    let promises = [];
+
+    this.getSelection().forEach((li) => {
+      let file = JSON.parse(li.dataset.file);
+      let key = li.dataset.key;
+
+      let formData = new FormData();
+
+      formData.append("path", file.path);
+      formData.append("key", key);
+
+      promises.push(this.ajax("/file", "DELETE", formData));
+
+    });
+    return Promise.all(promises);
+  }
 
   initEvents() {
-    this.btnRename.addEventListener("click", (e) => {
+    this.btnDelete.addEventListener("click", (e) => {
+      this.removeTask()
+        .then((responses) => {
+          responses.forEach((response) => {
+            if (response.fields.key) {
+              this.getFirebaseRef().child(response.fields.key).remove();
+            }
+          });
+          // console.log("reponses");
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    });
 
+    this.btnRename.addEventListener("click", (e) => {
       let fileLi = this.getSelection()[0];
 
       let fileData = JSON.parse(fileLi.dataset.file);
 
+      let fileName = prompt("Renomear arquivo", fileData.name);
 
-      let fileName = prompt('Renomear arquivo', fileData.name);
-
-      if(fileName){
-
+      if (fileName) {
         fileData.name = fileName;
 
         this.getFirebaseRef().child(fileLi.dataset.key).set(fileData);
-
-
-
       }
-
-
-
     });
 
     this.listFilesEl.addEventListener("selectionchange", (e) => {
@@ -120,6 +143,38 @@ class DropBoxController {
     this.btnSendFilesEl.disabled = false;
   }
 
+  ajax(url,method = "GET",formData = new FormData(),onprogress = function () {}, onloadstart = function () {}) {
+
+    return new Promise((resolve, reject) => {
+
+      let ajax = new XMLHttpRequest();
+
+      ajax.open(method, url);
+
+      ajax.onload = (event) => {
+        try {
+          resolve(JSON.parse(ajax.responseText));
+        } catch (e) {
+          reject(e);
+        }
+      };
+
+      ajax.onerror = (event) => {
+        reject(event);
+      };
+
+      ajax.upload.onprogress = onprogress;
+
+      onloadstart();
+
+      // console.log(formData, "form ");
+
+      // this.startUploadTime = Date.now();
+
+      ajax.send(formData);
+    });
+  }
+
   uploadTask(files) {
     //console.log(typeof(files), files, 'files in function');
 
@@ -127,47 +182,74 @@ class DropBoxController {
 
     [...files].forEach((file) => {
       //console.log(typeof(file), file, 'file in loop');
+      let formData = new FormData();
+
+      formData.append("input-file", file);
+
       promises.push(
-        new Promise((resolve, reject) => {
-          let ajax = new XMLHttpRequest();
-
-          ajax.open("POST", "/upload");
-
-          ajax.onload = (event) => {
-            try {
-              resolve(JSON.parse(ajax.responseText));
-            } catch (e) {
-              reject(e);
+          this.ajax("/upload","POST",formData,
+            () => {
+              this.uploadProgress(event, file);
+            },
+            () => {
+              this.startUploadTime = Date.now();
             }
-          };
-
-          ajax.onerror = (event) => {
-            reject(event);
-          };
-
-          ajax.upload.onprogress = (event) => {
-            this.uploadProgress(event, file);
-          };
-
-          let formData = new FormData();
-
-          // console.log(file, "file to form");
-
-          formData.append("input-file", file);
-
-          // console.log(formData, "form ");
-
-          this.startUploadTime = Date.now();
-
-          ajax.send(formData);
-        })
+          )
+        
       );
-
-      //console.log(typeof(promises), promises, 'promise in loop');
     });
-
     return Promise.all(promises);
   }
+
+  // uploadTask(files) {
+  //   //console.log(typeof(files), files, 'files in function');
+
+  //   let promises = [];
+
+  //   [...files].forEach((file) => {
+  //     //console.log(typeof(file), file, 'file in loop');
+  //     promises.push(
+  //       new Promise((resolve, reject) => {
+
+  //         let ajax = new XMLHttpRequest();
+
+  //         ajax.open("POST", "/upload");
+
+  //         ajax.onload = (event) => {
+  //           try {
+  //             resolve(JSON.parse(ajax.responseText));
+  //           } catch (e) {
+  //             reject(e);
+  //           }
+  //         };
+
+  //         ajax.onerror = (event) => {
+  //           reject(event);
+  //         };
+
+  //         ajax.upload.onprogress = (event) => {
+  //           this.uploadProgress(event, file);
+  //         };
+
+  //         let formData = new FormData();
+
+  //         // console.log(file, "file to form");
+
+  //         formData.append("input-file", file);
+
+  //         // console.log(formData, "form ");
+
+  //         this.startUploadTime = Date.now();
+
+  //         ajax.send(formData);
+  //       })
+  //     );
+
+  //     //console.log(typeof(promises), promises, 'promise in loop');
+  //   });
+
+  //   return Promise.all(promises);
+  // }
 
   uploadProgress(event, file) {
     let timeSpend = Date.now() - this.startUploadTime;
