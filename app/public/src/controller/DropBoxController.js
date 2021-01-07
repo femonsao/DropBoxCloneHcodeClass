@@ -45,10 +45,30 @@ class DropBoxController {
   }
 
   initEvents() {
+    this.btnRename.addEventListener("click", (e) => {
+
+      let fileLi = this.getSelection()[0];
+
+      let fileData = JSON.parse(fileLi.dataset.file);
+
+
+      let fileName = prompt('Renomear arquivo', fileData.name);
+
+      if(fileName){
+
+        fileData.name = fileName;
+
+        this.getFirebaseRef().child(fileLi.dataset.key).set(fileData);
+
+
+
+      }
+
+
+
+    });
 
     this.listFilesEl.addEventListener("selectionchange", (e) => {
-
-
       // console.log("selectionchange" , this.getSelection().length);
 
       switch (this.getSelection().length) {
@@ -92,7 +112,6 @@ class DropBoxController {
       this.modalShow();
     });
   }
-
 
   uploadComplete() {
     console.log("Sucess");
@@ -374,6 +393,7 @@ class DropBoxController {
   getFileView(file, key) {
     let li = document.createElement("li");
     li.dataset.key = key;
+    li.dataset.file = JSON.stringify(file);
 
     li.innerHTML = `    
        ${this.getFileIconView(file)}
@@ -400,8 +420,6 @@ class DropBoxController {
   }
   initEventsLi(li) {
     li.addEventListener("click", (e) => {
-
-
       if (e.shiftKey) {
         let firstLi = this.listFilesEl.querySelector("li.selected");
 
@@ -437,7 +455,6 @@ class DropBoxController {
         this.listFilesEl.querySelectorAll("li.selected").forEach((el) => {
           el.classList.remove("selected");
         });
-        
       }
       li.classList.toggle("selected");
       this.listFilesEl.dispatchEvent(this.onselectionchange);
