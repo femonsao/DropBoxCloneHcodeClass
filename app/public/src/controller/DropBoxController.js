@@ -2,12 +2,12 @@
 
 class DropBoxController {
   constructor() {
-
-
-    this.currentFolder = ['user'];
+    this.currentFolder = ["user"];
 
     this.onselectionchange = new Event("selectionchange");
     this.testnewevent = new Event("testnewevent");
+
+    this.navEl = document.querySelector("#browse-location");
 
     this.btnSendFilesEl = document.querySelector("#btn-send-file");
     this.inputFilesEl = document.querySelector("#files");
@@ -22,7 +22,7 @@ class DropBoxController {
 
     this.connectFireBase();
     this.initEvents();
-    this.readFiles();
+    this.openFolder();
   }
 
   connectFireBase() {
@@ -60,32 +60,24 @@ class DropBoxController {
       formData.append("key", key);
 
       promises.push(this.ajax("/file", "DELETE", formData));
-
     });
     return Promise.all(promises);
   }
 
   initEvents() {
+    this.btnNewFolder.addEventListener("click", (e) => {
+      let folderName = prompt("Nome da nova pasta");
 
-      this.btnNewFolder.addEventListener("click", e =>{
-
-        let folderName = prompt("Nome da nova pasta");
-
-
-        if(folderName){
-
-          this.getFirebaseRef().push().set({
-            name : folderName,
+      if (folderName) {
+        this.getFirebaseRef()
+          .push()
+          .set({
+            name: folderName,
             type: "folder",
-            path: this.currentFolder.join('/')
-          })
-
-        }
-
-      })
-
-
-
+            path: this.currentFolder.join("/"),
+          });
+      }
+    });
 
     this.btnDelete.addEventListener("click", (e) => {
       this.removeTask()
@@ -168,10 +160,14 @@ class DropBoxController {
     this.btnSendFilesEl.disabled = false;
   }
 
-  ajax(url,method = "GET",formData = new FormData(),onprogress = function () {}, onloadstart = function () {}) {
-
+  ajax(
+    url,
+    method = "GET",
+    formData = new FormData(),
+    onprogress = function () {},
+    onloadstart = function () {}
+  ) {
     return new Promise((resolve, reject) => {
-
       let ajax = new XMLHttpRequest();
 
       ajax.open(method, url);
@@ -212,15 +208,17 @@ class DropBoxController {
       formData.append("input-file", file);
 
       promises.push(
-          this.ajax("/upload","POST",formData,
-            () => {
-              this.uploadProgress(event, file);
-            },
-            () => {
-              this.startUploadTime = Date.now();
-            }
-          )
-        
+        this.ajax(
+          "/upload",
+          "POST",
+          formData,
+          () => {
+            this.uploadProgress(event, file);
+          },
+          () => {
+            this.startUploadTime = Date.now();
+          }
+        )
       );
     });
     return Promise.all(promises);
@@ -306,9 +304,10 @@ class DropBoxController {
     }
     return "";
   }
-  getFirebaseRef() {
+  getFirebaseRef(path) {
+    if (!path) path = this.currentFolder.join("/");
     try {
-      return firebase.database().ref("files");
+      return firebase.database().ref(path);
     } catch (e) {
       console.log("Error in function getFirebaseRef ", e);
     }
@@ -421,31 +420,29 @@ class DropBoxController {
         break;
 
       case "audio/mp3":
+      case "audio/mpeg":
       case "audio/ogg":
       case "audio/wav":
       case "audio/wma":
         return `
-                
-                <svg width="160" height="160" viewBox="0 0 160 160" class="mc-icon-template-content tile__preview tile__preview--icon">
-                <title>content-audio-large</title>
-                <defs>
-                    <rect id="mc-content-audio-large-b" x="30" y="43" width="100" height="74" rx="4"></rect>
-                    <filter x="-.5%" y="-.7%" width="101%" height="102.7%" filterUnits="objectBoundingBox" id="mc-content-audio-large-a">
-                        <feOffset dy="1" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
-                        <feColorMatrix values="0 0 0 0 0.858823529 0 0 0 0 0.870588235 0 0 0 0 0.88627451 0 0 0 1 0" in="shadowOffsetOuter1"></feColorMatrix>
-                    </filter>
-                </defs>
-                <g fill="none" fill-rule="evenodd">
-                    <g>
-                        <use fill="#000" filter="url(#mc-content-audio-large-a)" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#mc-content-audio-large-b"></use>
-                        <use fill="#F7F9FA" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#mc-content-audio-large-b"></use>
-                    </g>
-                    <path d="M67 60c0-1.657 1.347-3 3-3 1.657 0 3 1.352 3 3v40c0 1.657-1.347 3-3 3-1.657 0-3-1.352-3-3V60zM57 78c0-1.657 1.347-3 3-3 1.657 0 3 1.349 3 3v4c0 1.657-1.347 3-3 3-1.657 0-3-1.349-3-3v-4zm40 0c0-1.657 1.347-3 3-3 1.657 0 3 1.349 3 3v4c0 1.657-1.347 3-3 3-1.657 0-3-1.349-3-3v-4zm-20-5.006A3 3 0 0 1 80 70c1.657 0 3 1.343 3 2.994v14.012A3 3 0 0 1 80 90c-1.657 0-3-1.343-3-2.994V72.994zM87 68c0-1.657 1.347-3 3-3 1.657 0 3 1.347 3 3v24c0 1.657-1.347 3-3 3-1.657 0-3-1.347-3-3V68z" fill="#637282"></path>
+        <svg width="160" height="160" viewBox="0 0 160 160" class="mc-icon-template-content tile__preview tile__preview--icon">
+            <title>content-audio-large</title>
+            <defs>
+                <rect id="mc-content-audio-large-b" x="30" y="43" width="100" height="74" rx="4"></rect>
+                <filter x="-.5%" y="-.7%" width="101%" height="102.7%" filterUnits="objectBoundingBox" id="mc-content-audio-large-a">
+                    <feOffset dy="1" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
+                    <feColorMatrix values="0 0 0 0 0.858823529 0 0 0 0 0.870588235 0 0 0 0 0.88627451 0 0 0 1 0" in="shadowOffsetOuter1"></feColorMatrix>
+                </filter>
+            </defs>
+            <g fill="none" fill-rule="evenodd">
+                <g>
+                    <use fill="#000" filter="url(#mc-content-audio-large-a)" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#mc-content-audio-large-b"></use>
+                    <use fill="#F7F9FA" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#mc-content-audio-large-b"></use>
                 </g>
-            </svg>
-                
-                `;
-
+                <path d="M67 60c0-1.657 1.347-3 3-3 1.657 0 3 1.352 3 3v40c0 1.657-1.347 3-3 3-1.657 0-3-1.352-3-3V60zM57 78c0-1.657 1.347-3 3-3 1.657 0 3 1.349 3 3v4c0 1.657-1.347 3-3 3-1.657 0-3-1.349-3-3v-4zm40 0c0-1.657 1.347-3 3-3 1.657 0 3 1.349 3 3v4c0 1.657-1.347 3-3 3-1.657 0-3-1.349-3-3v-4zm-20-5.006A3 3 0 0 1 80 70c1.657 0 3 1.343 3 2.994v14.012A3 3 0 0 1 80 90c-1.657 0-3-1.343-3-2.994V72.994zM87 68c0-1.657 1.347-3 3-3 1.657 0 3 1.347 3 3v24c0 1.657-1.347 3-3 3-1.657 0-3-1.347-3-3V68z" fill="#637282"></path>
+            </g>
+        </svg>
+    `;
         break;
 
       case "video/mp4":
@@ -511,6 +508,8 @@ class DropBoxController {
     return li;
   }
   readFiles() {
+    this.lastFolder = this.currentFolder.join("/");
+
     this.getFirebaseRef().on("value", (snapshot) => {
       this.listFilesEl.innerHTML = "";
 
@@ -518,14 +517,92 @@ class DropBoxController {
         let key = snapshotItem.key;
         let data = snapshotItem.val();
 
+        if (data.type) {
+          this.listFilesEl.appendChild(this.getFileView(data, key));
+        }
+
         // console.log("key", key);
         // console.log("data", data);
-
-        this.listFilesEl.appendChild(this.getFileView(data, key));
       });
     });
   }
+  openFolder() {
+    if (this.lastFolder) this.getFirebaseRef(this.lastFolder).off("value");
+
+    this.renderNav();
+
+    this.readFiles();
+  }
+
+  renderNav() {
+    let nav = document.createElement("nav");
+
+    let folderPath = [];
+
+    for (let i = 0; i < this.currentFolder.length; i++) {
+      // console.log('for')
+
+      let folderName = this.currentFolder[i];
+      // console.log(folderName);
+
+      let spanNav = document.createElement("span");
+      spanNav.style = "text-transform: capitalize;";
+
+      folderPath.push(folderName);
+
+      if (i + 1 === this.currentFolder.length) {
+        spanNav.innerHTML = folderName;
+
+        nav.appendChild(spanNav);
+      } else {
+        spanNav.className = "breadcrumb-segment__wrapper";
+
+        spanNav.innerHTML = `
+          <span class="ue-effect-container uee-BreadCrumbSegment-link-0">
+              <a href="#" data-path="${folderPath.join(
+                "/"
+              )}" class="breadcrumb-segment" >${folderName}</a>
+          </span>
+              <svg width="24" height="24" viewBox="0 0 24 24" class="mc-icon-template-stateless" style="top: 4px; position: relative;">
+                        <title>arrow-right</title>
+                        <path d="M10.414 7.05l4.95 4.95-4.95 4.95L9 15.534 12.536 12 9 8.464z" fill="#637282" fill-rule="evenodd"></path>
+              </svg>
+        
+        
+        `;
+
+        nav.appendChild(spanNav);
+      }
+      this.navEl.innerHTML = nav.innerHTML;
+
+      this.navEl.querySelectorAll("a").forEach((a) => {
+        a.addEventListener("click", (e) => {
+          e.preventDefault();
+
+          this.currentFolder = a.dataset.path.split("/");
+
+          this.openFolder();
+        });
+      });
+    }
+  }
   initEventsLi(li) {
+    li.addEventListener("dblclick", (e) => {
+      let file = JSON.parse(li.dataset.file);
+
+      switch (file.type) {
+        case "folder":
+          this.currentFolder.push(file.name);
+          this.openFolder();
+          break;
+
+        default:
+          window.open("/file?path=" + file.path);
+
+          break;
+      }
+    });
+
     li.addEventListener("click", (e) => {
       if (e.shiftKey) {
         let firstLi = this.listFilesEl.querySelector("li.selected");
